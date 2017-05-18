@@ -14,13 +14,10 @@ echo
 echo "=== Requesting configuration data ==="
 echo
 
-read -p "Timezone (default: Europe/London): " TZONE
-TZONE=${TZONE:-'Europe/London'}
+read -p "Timezone (default: Europe/Kiev): " TZONE
+TZONE=${TZONE:-'Europe/Kiev'}
 
 read -p "Email address for sysadmin (e.g. j.bloggs@example.com): " EMAIL
-
-read -p "Port for SSH login (default: 22): " SSHPORT
-SSHPORT=${SSHPORT:-22}
 
 echo
 
@@ -103,9 +100,6 @@ iptables -A INPUT -m state --state INVALID -j DROP
 # rate-limit repeated new requests from same IP to any ports
 iptables -I INPUT -i $ETH0ORSIMILAR -m state --state NEW -m recent --set
 iptables -I INPUT -i $ETH0ORSIMILAR -m state --state NEW -m recent --update --seconds 60 --hitcount 12 -j DROP
-
-# accept (non-standard) SSH
-iptables -A INPUT -p tcp --dport $SSHPORT -j ACCEPT
 
 
 # VPN
@@ -223,39 +217,12 @@ ${VPNUSERNAME} %any : EAP \""${VPNPASSWORD}"\"
 ipsec restart
 
 
-
-echo
-echo "=== User ==="
-echo
-
-# user + SSH
-
-adduser --disabled-password --gecos "" $LOGINUSERNAME
-echo "${LOGINUSERNAME}:${LOGINPASSWORD}" | chpasswd
-adduser ${LOGINUSERNAME} sudo
-
-sed -r \
--e "s/^#?Port 22$/Port ${SSHPORT}/" \
--e 's/^#?LoginGraceTime (120|2m)$/LoginGraceTime 30/' \
--e 's/^#?PermitRootLogin yes$/PermitRootLogin no/' \
--e 's/^#?X11Forwarding yes$/X11Forwarding no/' \
--e 's/^#?UsePAM yes$/UsePAM no/' \
--i.original /etc/ssh/sshd_config
-
-echo "
-MaxStartups 1
-MaxAuthTries 2
-UseDNS no" >> /etc/ssh/sshd_config
-
-service ssh restart
-
-
 echo
 echo "=== Timezone, mail, unattended upgrades ==="
 echo
 
 timedatectl set-timezone $TZONE
-/usr/sbin/update-locale LANG=en_GB.UTF-8
+/usr/sbin/update-locale LANG=en_US.UTF-8
 
 
 sed -r \
